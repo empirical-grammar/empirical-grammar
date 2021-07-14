@@ -1,5 +1,7 @@
 module Comprehension
   class RegexRule < ActiveRecord::Base
+    include Comprehension::ChangeLog
+
     DEFAULT_CASE_SENSITIVITY = true
     MAX_REGEX_TEXT_LENGTH = 200
     CASE_SENSITIVE_ALLOWED_VALUES = [true, false]
@@ -9,6 +11,7 @@ module Comprehension
     ]
 
     belongs_to :rule, inverse_of: :regex_rules
+    has_many :change_logs, class_name: "::ChangeLog"
 
     before_validation :set_default_case_sensitivity, on: :create
     before_save :validate_regex
@@ -17,6 +20,8 @@ module Comprehension
     validates :regex_text, presence: true, length: {maximum: MAX_REGEX_TEXT_LENGTH}
     validates :case_sensitive, inclusion: CASE_SENSITIVE_ALLOWED_VALUES
     validates :sequence_type, inclusion: SEQUENCE_TYPES
+
+    after_save :log_update
 
     def serializable_hash(options = nil)
       options ||= {}
@@ -51,6 +56,12 @@ module Comprehension
       rescue RegexpError => e
         rule.errors.add(:invalid_regex, e.to_s)
         false
+      end
+    end
+
+    def log_update
+      if regex_text_changed?
+        log_change(nil, :update_regex_text, self, {url: rule.url}.to_json, "regex_text", regex_text_was, regex_text)
       end
     end
   end

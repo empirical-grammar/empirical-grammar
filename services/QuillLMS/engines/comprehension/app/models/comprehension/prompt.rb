@@ -1,5 +1,7 @@
 module Comprehension
   class Prompt < ActiveRecord::Base
+    include Comprehension::ChangeLog
+
     MIN_TEXT_LENGTH = 10
     MAX_TEXT_LENGTH = 255
     CONJUNCTIONS = %w(because but so)
@@ -7,12 +9,14 @@ module Comprehension
     MIN_MAX_ATTEMPTS = 3
     MAX_MAX_ATTEMPTS = 6
 
-    belongs_to :activity, inverse_of: :passages
+    belongs_to :activity, inverse_of: :prompts
     has_many :automl_models, inverse_of: :prompt
     has_many :prompts_rules
     has_many :rules, through: :prompts_rules, inverse_of: :prompts
+    has_many :change_logs
 
     after_create :assign_universal_rules
+    after_save :log_update
     before_validation :downcase_conjunction
     before_validation :set_max_attempts, on: :create
 
@@ -56,6 +60,12 @@ module Comprehension
         elsif length > MAX_TEXT_LENGTH
           errors.add(:text, "#{prompt} too long (maximum is #{MAX_TEXT_LENGTH} characters)")
         end
+      end
+    end
+
+    private def log_update
+      if text_changed?
+        log_change(1, :update_prompt, self, {url: activity.url, conjunction: conjunction}.to_json, "text", text_was, text)
       end
     end
   end

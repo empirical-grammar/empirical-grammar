@@ -3,7 +3,7 @@ require_dependency 'comprehension/application_controller'
 module Comprehension
   class ActivitiesController < ApplicationController
     skip_before_action :verify_authenticity_token
-    before_action :set_activity, only: [:show, :update, :destroy, :rules]
+    before_action :set_activity, only: [:show, :update, :destroy, :rules, :change_log]
 
     # GET /activities.json
     def index
@@ -21,7 +21,7 @@ module Comprehension
     def create
       @activity = Comprehension::Activity.new(activity_params)
 
-      if @activity.save
+      if @activity.save_with_session_user(lms_user_id)
         render json: @activity, status: :created
       else
         render json: @activity.errors, status: :unprocessable_entity
@@ -39,13 +39,18 @@ module Comprehension
 
     # DELETE /activities/1.json
     def destroy
-      @activity.destroy
+      @activity.destroy_with_session_user(lms_user_id)
       head :no_content
     end
 
     # GET /activities/1/rules.json
     def rules
       render json: @activity.prompts&.map {|p| p.rules}&.flatten&.uniq
+    end
+
+    # GET /activities/1/change_logs.json
+    def change_logs
+      render json: @activity&.change_logs || []
     end
 
     private def set_activity

@@ -3,6 +3,7 @@ require "google/cloud/automl"
 
 module Comprehension
   class AutomlModel < ActiveRecord::Base
+    include Comprehension::ChangeLog
     MIN_LABELS_LENGTH = 1
     STATES = [
       STATE_ACTIVE = 'active',
@@ -12,6 +13,7 @@ module Comprehension
     attr_readonly :automl_model_id, :name, :labels
 
     belongs_to :prompt, inverse_of: :automl_models
+    has_many :change_logs
 
     validate :validate_label_associations, if: :active?
 
@@ -19,6 +21,8 @@ module Comprehension
     validates :labels, presence: true, length: {minimum: MIN_LABELS_LENGTH}
     validates :name, presence: true
     validates :state, inclusion: {in: ['active', 'inactive']}
+
+    after_create :log_creation
 
     def serializable_hash(options = nil)
       options ||= {}
@@ -39,6 +43,16 @@ module Comprehension
       state == STATE_ACTIVE
     end
 
+    def save_with_session_user(lms_user_id)
+      @lms_user_id = lms_user_id
+      save
+    end
+
+    def activate_with_session_user(lms_user_id)
+      @lms_user_id = lms_user_id
+      activate
+    end
+
     def activate
       AutomlModel.transaction do
         prompt.automl_models.update_all(state: STATE_INACTIVE)
@@ -48,6 +62,7 @@ module Comprehension
           rule.update!(state: Rule::STATE_ACTIVE) if labels.include?(rule.label&.name)
         end
       end
+      log_activation
       self
     rescue StandardError => e
       raise e unless e.is_a?(ActiveRecord::RecordInvalid)
@@ -112,6 +127,18 @@ module Comprehension
     private def automl_name
       model = automl_client.get_model(name: automl_model_full_id)
       model.display_name
+    end
+
+    private def url
+      "comprehension/#/activities/#{prompt.activity.id}/semantic-labels/model/#{id}"
+    end
+
+    private def log_creation
+      log_change(@lms_user_id, :create_automl, self, {url: url}.to_json, nil, nil, nil)
+    end
+
+    private def log_activation
+      log_change(@lms_user_id, :activate_automl, self, {url: url}.to_json, nil, nil, nil)
     end
   end
 end

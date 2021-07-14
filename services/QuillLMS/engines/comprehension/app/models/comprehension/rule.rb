@@ -1,6 +1,9 @@
 module Comprehension
   class Rule < ActiveRecord::Base
+    include Comprehension::ChangeLog
+
     attr_accessor :first_feedback
+
     MAX_NAME_LENGTH = 250
     ALLOWED_BOOLEANS = [true, false]
     STATES = [
@@ -23,8 +26,20 @@ module Comprehension
       'rules-based-3': 'Typo Regex',
       'plagiarism': 'Plagiarism'
     }
+    UPDATE_ACTIONS = {
+      'rules-based-1': :update_regex,
+      'rules-based-2': :update_regex,
+      'rules-based-3': :update_regex,
+      'plagiarism': :update_plagiarism,
+      'spelling': :update_universal,
+      'grammar': :update_universal,
+      'autoML': :update_semantic
+    }
 
     after_create :assign_to_all_prompts, if: :universal
+    after_create :log_creation
+    after_update :log_update
+    after_destroy :log_deletion
     before_validation :assign_uid_if_missing
     validate :one_plagiarism_per_prompt, on: :create, if: :plagiarism?
 
@@ -34,6 +49,7 @@ module Comprehension
     has_many :prompts_rules, inverse_of: :rule
     has_many :prompts, through: :prompts_rules, inverse_of: :rules
     has_many :regex_rules, inverse_of: :rule, dependent: :destroy
+    has_many :change_logs
 
     accepts_nested_attributes_for :plagiarism_text
     accepts_nested_attributes_for :feedbacks
@@ -91,8 +107,20 @@ module Comprehension
       end
     end
 
-    private def plagiarism?
+    def plagiarism?
       rule_type == TYPE_PLAGIARISM
+    end
+
+    def regex?
+      rule_type == TYPE_REGEX_ONE || rule_type == TYPE_REGEX_TWO || rule_type == TYPE_REGEX_THREE
+    end
+
+    private def automl?
+      rule_type == TYPE_AUTOML
+    end
+
+    private def universal?
+      universal
     end
 
     private def assign_uid_if_missing
@@ -112,6 +140,67 @@ module Comprehension
       prompts.each do |prompt|
         errors.add(:prompts, "prompt #{prompt.id} already has a plagiarism rule") if prompt.rules.where(rule_type: TYPE_PLAGIARISM).first&.id
       end
+    end
+
+    private def log_creation
+      if regex?
+        log_change(nil, :create_regex, self, {url: url}.to_json, nil, nil, nil)
+      elsif plagiarism?
+        log_change(nil, :create_plagiarism, self, {url: url}.to_json, nil, nil, nil)
+      elsif universal?
+        log_change(nil, :create_universal, self, {url: url}.to_json, nil, nil, nil)
+      end
+    end
+
+    private def log_deletion
+      if regex?
+        log_change(nil, :delete_regex, self, {url: url}.to_json, nil, nil, nil)
+      end
+    end
+
+    private def log_update
+      return if rule_type == TYPE_OPINION
+      changes.except(:"updated_at").each do |key, value|
+        log_change(nil, UPDATE_ACTIONS[rule_type.to_sym], self, {url: url}.to_json, key, value[0], value[1])
+      end
+    end
+
+    private def activity_id
+      prompts&.first&.activity&.id
+    end
+
+    private def prompt_id
+      prompts&.first&.id
+    end
+
+    def url
+      if regex?
+        regex_url
+      elsif universal?
+        universal_url
+      elsif plagiarism?
+        plagiarism_url
+      elsif automl?
+        automl_url
+      else
+        ""
+      end
+    end
+
+    private def universal_url
+      "comprehension/#/universal-rules/#{id}"
+    end
+
+    private def regex_url
+      "comprehension/#/activities/#{activity_id}/regex-rules/#{id}"
+    end
+
+    private def plagiarism_url
+      "comprehension/#/activities/#{activity_id}/plagiarism-rules/#{id}"
+    end
+
+    private def automl_url
+      "comprehension/#/activities/#{activity_id}/semantic-labels/#{prompt_id}/#{id}"
     end
   end
 end

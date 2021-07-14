@@ -68,6 +68,7 @@ module Comprehension
 
     context "create" do
       setup do
+        @controller.session[:user_id] = 1
         @activity = build(:comprehension_activity, parent_activity_id: 1, title: "First Activity", target_level: 8, scored_level: "4th grade", notes: "First Activity - Notes")
         Comprehension.parent_activity_classification_class.create(key: 'comprehension')
       end
@@ -81,6 +82,18 @@ module Comprehension
         assert_equal "First Activity", parsed_response['title']
         assert_equal "First Activity - Notes", parsed_response['notes']
         assert_equal 1, Activity.count
+      end
+
+      should "make a change log record after creating the Activity record" do
+        post :create, activity: { parent_activity_id: @activity.parent_activity_id, scored_level: @activity.scored_level, target_level: @activity.target_level, title: @activity.title, notes: @activity.notes }
+
+        activity = Activity.last
+        change_log = Comprehension.change_log_class.last
+        assert_equal change_log.action, "Comprehension Activity - created"
+        assert_equal change_log.user_id, 1
+        assert_equal change_log.changed_record_type, "Comprehension::Activity"
+        assert_equal change_log.changed_record_id, activity.id
+        assert_equal change_log.new_value, nil
       end
 
       should "not create an invalid record and return errors as json" do
@@ -156,6 +169,7 @@ module Comprehension
 
     context "update" do
       setup do
+        @controller.session[:user_id] = 1
         @activity = create(:comprehension_activity, parent_activity_id: 1, title: "First Activity", target_level: 8, scored_level: "4th grade")
         @passage = create(:comprehension_passage, activity: @activity)
         @prompt = create(:comprehension_prompt, activity: @activity)
@@ -186,6 +200,31 @@ module Comprehension
         assert_equal ('Goodbye' * 20), @passage.text
       end
 
+      should "make a change log record after updating Passage text" do
+        old_text = @passage.text
+        put :update, id: @activity.id, activity: { passages_attributes: [{id: @passage.id, text: ('Goodbye' * 20)}] }
+
+        change_log = Comprehension.change_log_class.last
+        assert_equal change_log.action, "Comprehension Passage Text - updated"
+        assert_equal change_log.user_id, nil
+        assert_equal change_log.changed_record_type, "Comprehension::Passage"
+        assert_equal change_log.changed_record_id, @passage.id
+        assert_equal change_log.previous_value, old_text
+        assert_equal change_log.new_value, ('Goodbye' * 20)
+      end
+
+      should "make a change log record after creating Passage text" do
+        new_activity = create(:comprehension_activity)
+        put :update, id: @activity.id, activity: { passages_attributes: [{text: ('Goodbye' * 20)}] }
+
+        change_log = Comprehension.change_log_class.last
+        assert_equal change_log.action, "Comprehension Passage Text - updated"
+        assert_equal change_log.user_id, nil
+        assert_equal change_log.changed_record_type, "Comprehension::Passage"
+        assert_equal change_log.previous_value, nil
+        assert_equal change_log.new_value, ('Goodbye' * 20)
+      end
+
       should "update prompt if valid, return nothing" do
         put :update, id: @activity.id, activity: { prompts_attributes: [{id: @prompt.id, text: "this is a good thing."}] }
 
@@ -197,6 +236,31 @@ module Comprehension
         assert_equal "this is a good thing.", @prompt.text
       end
 
+      should "make a change log record after updating Prompt text" do
+        old_text = @prompt.text
+        put :update, id: @activity.id, activity: { prompts_attributes: [{id: @prompt.id, text: "this is a good thing."}] }
+
+        change_log = Comprehension.change_log_class.last
+        assert_equal change_log.action, "Comprehension Stem - updated"
+        assert_equal change_log.user_id, 1
+        assert_equal change_log.changed_record_type, "Comprehension::Prompt"
+        assert_equal change_log.changed_record_id, @prompt.id
+        assert_equal change_log.previous_value, old_text
+        assert_equal change_log.new_value, "this is a good thing."
+      end
+
+      should "make a change log record after creating Prompt text through update call" do
+        put :update, id: @activity.id, activity: { prompts_attributes: [{text: "this is a new prompt.", conjunction: "because"}] }
+
+        prompt = Comprehension::Prompt.last
+        change_log = Comprehension.change_log_class.last
+        assert_equal change_log.action, "Comprehension Stem - updated"
+        assert_equal change_log.user_id, 1
+        assert_equal change_log.changed_record_type, "Comprehension::Prompt"
+        assert_equal change_log.changed_record_id, prompt.id
+        assert_equal change_log.previous_value, nil
+        assert_equal change_log.new_value, "this is a new prompt."
+      end
 
       should "not update record and return errors as json" do
         put :update, id: @activity.id, activity: { parent_activity_id: 2, scored_level: "5th grade", target_level: 99999999, title: "New title" }
@@ -210,6 +274,7 @@ module Comprehension
 
     context 'destroy' do
       setup do
+        @controller.session[:user_id] = 1
         @activity = create(:comprehension_activity)
         @passage = create(:comprehension_passage, activity: @activity)
       end
@@ -223,6 +288,18 @@ module Comprehension
         assert_nil Activity.find_by_id(@activity.id) # not in DB.
         assert @passage.id
         assert_nil Passage.find_by_id(@passage.id)
+      end
+
+      should "make a change log record after destroying the Activity record" do
+        delete :destroy, id: @activity.id
+
+        change_log = Comprehension.change_log_class.last
+        assert_equal change_log.action, "Comprehension Activity - deleted"
+        assert_equal change_log.user_id, 1
+        assert_equal change_log.changed_record_type, "Comprehension::Activity"
+        assert_equal change_log.changed_record_id, @activity.id
+        assert_equal change_log.previous_value, nil
+        assert_equal change_log.new_value, nil
       end
     end
 
@@ -247,6 +324,53 @@ module Comprehension
         assert_raises ActiveRecord::RecordNotFound do
           get :rules, id: 99999
         end
+      end
+    end
+
+    context 'change_logs' do
+      setup do
+        @controller.session[:user_id] = 1
+        @activity = build(:comprehension_activity, parent_activity_id: 1, title: "First Activity", target_level: 8, scored_level: "4th grade", notes: "First Activity - Notes")
+        @prompt = build(:comprehension_prompt)
+        @passage = build(:comprehension_passage)
+        Comprehension.parent_activity_classification_class.create(key: 'comprehension')
+      end
+
+      should "return change logs for that activity" do
+        post :create, activity: {
+          parent_activity_id: @activity.parent_activity_id,
+          scored_level: @activity.scored_level,
+          target_level: @activity.target_level,
+          title: @activity.title,
+          notes: @activity.notes,
+          passages_attributes: [{
+            text: @passage.text
+          }],
+          prompts_attributes: [{
+            text: @prompt.text,
+            conjunction: @prompt.conjunction,
+            max_attempts: @prompt.max_attempts,
+            max_attempts_feedback: @prompt.max_attempts_feedback
+          }],
+        }
+
+        activity = Comprehension::Activity.last
+        get :change_logs, id: activity.id
+        parsed_response = JSON.parse(response.body)
+
+        assert_equal 200, response.code.to_i
+        assert parsed_response.select {|cl| cl["changed_record_type"] == 'Comprehension::Passage'}.count == 1
+        assert parsed_response.select {|cl| cl["changed_record_type"] == 'Comprehension::Activity'}.count == 1
+        assert parsed_response.select {|cl| cl["changed_record_type"] == 'Comprehension::Prompt'}.count == 1
+
+      end
+
+      should "return empty array if no change logs exist" do
+        get :change_logs, id: "none"
+        parsed_response = JSON.parse(response.body)
+
+        assert_equal 200, response.code.to_i
+        assert_equal [], parsed_response
       end
     end
   end

@@ -21,7 +21,6 @@ module Comprehension
     # POST /rules.json
     def create
       @rule = Comprehension::Rule.new(rule_params)
-
       if @rule.save
         render json: @rule, status: :created
       else
