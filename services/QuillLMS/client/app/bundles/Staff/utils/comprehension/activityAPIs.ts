@@ -87,12 +87,11 @@ export const fetchActivitySession = async (key: string, sessionId: string) => {
 }
 
 export const fetchChangeLog = async (key: string, activityId: string) => {
-  const response = await apiFetch(`activities/${activityId}/change_log`);
+  const response = await apiFetch(`activities/${activityId}/change_logs`);
   const changeLogs = await response.json();
 
   return {
     changeLogs,
-    error: handleApiError('Failed to fetch change log, please refresh the page.', response),
-    // flag: flagObject
+    error: handleApiError('Failed to fetch change log, please refresh the page.', response)
   };
 }

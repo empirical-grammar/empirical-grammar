@@ -1,4 +1,5 @@
 import * as React from "react";
+import * as _ from 'underscore';
 import { RouteComponentProps } from 'react-router-dom'
 import { useQuery } from 'react-query';
 import { firstBy } from "thenby";
@@ -25,12 +26,13 @@ const ChangeLog = ({ history, match }) => {
   const initialEndDate = initialEndDateString ? new Date(initialEndDateString) : null;
 
   const [searchInput, setSearchInput] = React.useState<string>('');
-  const [prompt, setPrompt] = React.useState<string>('All Prompts');
+  const [prompt, setPrompt] = React.useState<string>('all');
+  const [rule, setRule] = React.useState<string>('all');
   const [startDate, onStartDateChange] = React.useState<Date>(initialStartDate);
   const [endDate, onEndDateChange] = React.useState<Date>(initialEndDate);
 
   // get cached activity data to pass to rule
-  const { data: changeLogData } = useQuery({
+  const { data: changeLogData, status: status } = useQuery({
     queryKey: [`activity-${activityId}`, activityId],
     queryFn: fetchChangeLog
   });
@@ -43,10 +45,15 @@ const ChangeLog = ({ history, match }) => {
     setPrompt(e.target.value)
   }
 
+  function handleRuleChange(e) {
+    setRule(e.target.value)
+  }
+
   const promptDropdown = (
-      <p className="control">
+    <div style={{width: '150px', padding: '10px'}}>
+      <p className="control" >
         <span className="select">
-          <select defaultValue={'All Prompts'} onChange={handlePromptChange}>
+          <select defaultValue='all' onBlur={handlePromptChange}>
             <option value="all">All Prompts</option>
             <option value="because">because</option>
             <option value="but">but</option>
@@ -54,6 +61,7 @@ const ChangeLog = ({ history, match }) => {
           </select>
         </span>
       </p>
+    </div>
   )
 
   const formattedRows = changeLogData && changeLogData.changeLogs && changeLogData.changeLogs.map(log => {
@@ -65,15 +73,14 @@ const ChangeLog = ({ history, match }) => {
       new_value,
       record_type_display_name,
       user,
-      explanation
+      explanation,
+      conjunction,
+      name
     } = log;
 
     const changedRecord = `${record_type_display_name} - ${changed_record_id}`
     const actionLink = explanation && JSON.parse(explanation).url
     const prompt = explanation && JSON.parse(explanation).conjunction
-    console.log(startDate)
-    console.log(endDate)
-    console.log(updated_local_time)
 
     return {
       action: action,
@@ -83,7 +90,9 @@ const ChangeLog = ({ history, match }) => {
       author: user,
       dateTime: updated_local_time,
       actionLink: actionLink,
-      prompt: prompt
+      prompt: prompt,
+      conjunction: conjunction,
+      name: name
     }
   })
 
@@ -92,10 +101,24 @@ const ChangeLog = ({ history, match }) => {
     (value.previousValue && value.previousValue.toLowerCase().includes(searchInput.toLowerCase())) ||
     (value.newValue && value.newValue.toLowerCase().includes(searchInput.toLowerCase())))
   }).filter(value => {
-    return prompt === 'All Prompts' || value.prompt === null || value.prompt === prompt
+    return prompt === 'all' || value.conjunction === prompt
+  }).filter(value => {
+    return rule === 'all' || value.name === rule
+  }).filter(value => {
+    if (startDate == null && endDate == null) return true
+    if (startDate == null) return Date.parse(value.dateTime) <= Date.parse(endDate.toString())
+    if (endDate == null) return Date.parse(startDate.toString()) <= Date.parse(value.dateTime)
+    return Date.parse(startDate.toString()) <= Date.parse(value.dateTime) && Date.parse(value.dateTime) <= Date.parse(endDate.toString())
   })
 
   const dataTableFields = [
+    {
+      Header: 'Date/Time',
+      accessor: "dateTime",
+      key: "dateTime",
+      sortMethod: sort,
+      width: 160,
+    },
     {
       Header: 'Action',
       accessor: "action",
@@ -104,9 +127,16 @@ const ChangeLog = ({ history, match }) => {
       Cell: cell => (<a href={cell.original.actionLink} rel="noopener noreferrer" target="_blank">{cell.original.action}</a>)
     },
     {
-      Header: 'Change Record',
-      accessor: "changedRecord",
-      key: "changedRecord",
+      Header: 'Rule/Model Name',
+      accessor: "name",
+      key: "name",
+      sortMethod: sort,
+      width: 160,
+    },
+    {
+      Header: 'Prompt',
+      accessor: "conjunction",
+      key: "conjunction",
       sortMethod: sort,
       width: 160,
     },
@@ -130,48 +160,69 @@ const ChangeLog = ({ history, match }) => {
       key: "author",
       sortMethod: sort,
       width: 160,
-    },
-    {
-      Header: 'Date/Time',
-      accessor: "dateTime",
-      key: "dateTime",
-      sortMethod: sort,
-      width: 160,
     }
   ];
 
-  if (!formattedRows) {
+  if (status === 'loading') {
     return <Spinner />
+  }
+
+  function ruleDropdown() {
+    const rules = _.uniq(formattedRows.filter(a => a.name != null).map((a)=>a.name))
+    const ruleOptions = rules.map((currentValue, i) => {
+      return <option key={i} value={currentValue}>{currentValue}</option>
+    })
+    return (
+      <div style={{width: '150px', padding: '10px'}}>
+        <p className="control">
+          <span className="select">
+            <select defaultValue='all' onBlur={handleRuleChange}>
+              <option value="all">All Rules</option>
+              {ruleOptions}
+            </select>
+          </span>
+        </p>
+      </div>
+    )
   }
 
   return(
     <div className="activity-stats-container">
       <h1>Change Log</h1>
-      {promptDropdown}
-      <input
-        aria-label="Search by action or value"
-        className="search-box"
-        name="searchInput"
-        onChange={handleSearch}
-        placeholder="Search by action or value"
-        value={searchInput || ""}
-        style={{width: '500px'}}
-      />
-      <p className="date-picker-label">Start Date:</p>
-        <DateTimePicker
-          ampm={false}
-          format='y-MM-dd HH:mm'
-          onChange={onStartDateChange}
-          value={startDate}
-      />
-      <p className="date-picker-label">End Date (optional):</p>
-        <DateTimePicker
-          ampm={false}
-          format='y-MM-dd HH:mm'
-          onChange={onEndDateChange}
-          value={endDate}
-        />
-      <br/><br/>
+      <div style={{backgroundColor: 'lightgray', borderRadius: '10px'}}>
+        <div style={{display: 'flex', position: 'relative', width: '1000px'}}>
+          <div style={{float: 'left', display: 'flex'}}>
+            {promptDropdown}
+            {ruleDropdown()}
+          </div>
+          <input
+            aria-label="Search by action or value"
+            className="search-box"
+            name="searchInput"
+            onChange={handleSearch}
+            placeholder="Search by action or value"
+            style={{width: '500px', margin: '10px', position: 'absolute', right: '10px'}}
+            value={searchInput || ""}
+          />
+        </div>
+        <div style={{display: 'flex', marginLeft: '10px', paddingBottom: '20px'}}>
+          <p className="date-picker-label">Start Date:</p>
+            <DateTimePicker
+              ampm={false}
+              format='y-MM-dd HH:mm'
+              onChange={onStartDateChange}
+              value={startDate}
+          />
+          <p className="date-picker-label">End Date (optional):</p>
+            <DateTimePicker
+              ampm={false}
+              format='y-MM-dd HH:mm'
+              onChange={onEndDateChange}
+              value={endDate}
+            />
+        </div>
+      </div>
+      <br />
       {formattedRows && (<ReactTable
         className="activity-stats-table"
         columns={dataTableFields}

@@ -2,17 +2,17 @@
 #
 # Table name: change_logs
 #
-#  id                          :integer          not null, primary key
-#  action                      :string           not null
-#  changed_attribute           :string
-#  changed_record_type         :string           not null
-#  explanation                 :text
-#  new_value                   :text
-#  previous_value              :text
-#  created_at                  :datetime
-#  updated_at                  :datetime
-#  changed_record_id           :integer
-#  user_id                     :integer          not null
+#  id                  :integer          not null, primary key
+#  action              :string           not null
+#  changed_attribute   :string
+#  changed_record_type :string           not null
+#  explanation         :text
+#  new_value           :text
+#  previous_value      :text
+#  created_at          :datetime
+#  updated_at          :datetime
+#  changed_record_id   :integer
+#  user_id             :integer
 #
 # Indexes
 #
@@ -130,7 +130,7 @@ class ChangeLog < ActiveRecord::Base
 
   belongs_to :changed_record, polymorphic: true
   belongs_to :user
-  validates_presence_of :changed_record_type, :user_id, :action
+  validates_presence_of :changed_record_type, :action
 
   validates :changed_record_id, presence: true, if: :needs_a_changed_record_id?
   validates :action, inclusion: ALL_ACTIONS
