@@ -167,6 +167,8 @@ const ChangeLog = ({ history, match }) => {
     return <Spinner />
   }
 
+  console.log(formattedRows)
+
   function ruleDropdown() {
     const rules = _.uniq(formattedRows.filter(a => a.name != null).map((a)=>a.name))
     const ruleOptions = rules.map((currentValue, i) => {

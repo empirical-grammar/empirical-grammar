@@ -44,7 +44,8 @@ module Comprehension
 
     def rules_change_logs(prompt)
       prompt.rules.map { |rule|
-        logs = label_change_logs(rule) + feedbacks_change_logs(rule) + regex_rules_change_logs(rule) + plagiarism_text_change_logs(rule)
+        rule_logs = @change_log.where(changed_record_type: 'Comprehension::Rule', changed_record_id: rule.id).map(&:attributes)
+        logs = rule_logs + label_change_logs(rule) + feedbacks_change_logs(rule) + regex_rules_change_logs(rule) + plagiarism_text_change_logs(rule)
         logs.map {|log|
           log.merge({name: rule.name})
         }
