@@ -17,7 +17,7 @@ module Comprehension
     end
 
     def universal_change_logs
-      @change_log.where(action: UNIVERSAL_RULE_ACTIONS).map(&:attributes) || []
+      @change_log.where(action: UNIVERSAL_RULE_ACTIONS).map { |cl| cl.attributes.merge({name: Comprehension::Rule.find(cl.changed_record_id).name})} || []
     end
 
     def activity_change_logs
@@ -30,7 +30,9 @@ module Comprehension
 
     def prompts_change_logs
       @activity.prompts.map { |prompt|
-        prompt_logs = @change_log.where(changed_record_type: 'Comprehension::Prompt', changed_record_id: prompt.id).map(&:attributes)
+        prompt_logs = @change_log.where(changed_record_type: 'Comprehension::Prompt', changed_record_id: prompt.id).map{ |cl|
+          ['Regex Rule - deleted', 'Semantic Label - deleted'].include?(cl.action) ? cl.attributes.merge({name: JSON.parse(cl.explanation)["name"]}) : cl.attributes
+        }
         logs = prompt_logs + automl_change_logs(prompt) + rules_change_logs(prompt)
         logs.map { |log|
           log.merge({conjunction: prompt.conjunction})
@@ -44,6 +46,7 @@ module Comprehension
 
     def rules_change_logs(prompt)
       prompt.rules.map { |rule|
+        next [] if rule.universal_rule_type?
         rule_logs = @change_log.where(changed_record_type: 'Comprehension::Rule', changed_record_id: rule.id).map(&:attributes)
         logs = rule_logs + label_change_logs(rule) + feedbacks_change_logs(rule) + regex_rules_change_logs(rule) + plagiarism_text_change_logs(rule)
         logs.map {|log|

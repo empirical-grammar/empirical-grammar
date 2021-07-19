@@ -42,6 +42,7 @@ const ChangeLog = ({ history, match }) => {
   }
 
   function handlePromptChange(e) {
+    console.log("prompt changed")
     setPrompt(e.target.value)
   }
 
@@ -53,7 +54,7 @@ const ChangeLog = ({ history, match }) => {
     <div style={{width: '150px', padding: '10px'}}>
       <p className="control" >
         <span className="select">
-          <select defaultValue='all' onBlur={handlePromptChange}>
+          <select defaultValue='all' onChange={handlePromptChange}>
             <option value="all">All Prompts</option>
             <option value="because">because</option>
             <option value="but">but</option>
@@ -75,7 +76,8 @@ const ChangeLog = ({ history, match }) => {
       user,
       explanation,
       conjunction,
-      name
+      name,
+      changed_attribute
     } = log;
 
     const changedRecord = `${record_type_display_name} - ${changed_record_id}`
@@ -92,7 +94,8 @@ const ChangeLog = ({ history, match }) => {
       actionLink: actionLink,
       prompt: prompt,
       conjunction: conjunction,
-      name: name
+      name: name,
+      changedAttribute: changed_attribute
     }
   })
 
@@ -141,6 +144,13 @@ const ChangeLog = ({ history, match }) => {
       width: 160,
     },
     {
+      Header: 'Changed Attribute',
+      accessor: "changedAttribute",
+      key: "changedAttribute",
+      sortMethod: sort,
+      width: 160,
+    },
+    {
       Header: 'Previous Value',
       accessor: "previousValue",
       key: "previousValue",
@@ -163,22 +173,20 @@ const ChangeLog = ({ history, match }) => {
     }
   ];
 
-  if (status === 'loading') {
+  if (status === 'loading' || !formattedRows) {
     return <Spinner />
   }
-
-  console.log(formattedRows)
 
   function ruleDropdown() {
     const rules = _.uniq(formattedRows.filter(a => a.name != null).map((a)=>a.name))
     const ruleOptions = rules.map((currentValue, i) => {
-      return <option key={i} value={currentValue}>{currentValue}</option>
+      return <option key={currentValue} value={currentValue}>{currentValue}</option>
     })
     return (
       <div style={{width: '150px', padding: '10px'}}>
         <p className="control">
           <span className="select">
-            <select defaultValue='all' onBlur={handleRuleChange}>
+            <select defaultValue='all' onChange={handleRuleChange}>
               <option value="all">All Rules</option>
               {ruleOptions}
             </select>

@@ -68,13 +68,13 @@ class ChangeLog < ActiveRecord::Base
     RENAMED
   ]
   COMPREHENSION_ACTIONS = {
-    create_activity: 'Comprehension Activity - created', #tested
-    delete_activity: 'Comprehension Activity - deleted', #tested
-    update_passage: 'Comprehension Passage Text - updated', #tested
+    create_activity: 'Comprehension Activity - created',
+    delete_activity: 'Comprehension Activity - deleted',
+    update_passage: 'Comprehension Passage Text - updated',
     create_regex: 'Regex Rule - created',
     update_regex: 'Regex Rule - updated',
     delete_regex: 'Regex Rule - deleted',
-    update_regex_feedack: 'Regex Rule Feedback - updated',
+    update_regex_feedback: 'Regex Rule Feedback - updated',
     update_regex_highlight: 'Regex Rule Highlight - updated',
     update_regex_text: 'Regex Rule Regex - updated',
     update_prompt: 'Comprehension Stem - updated',

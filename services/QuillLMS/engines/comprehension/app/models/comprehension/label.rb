@@ -1,6 +1,5 @@
 module Comprehension
   class Label < ActiveRecord::Base
-    include Comprehension::ChangeLog
 
     NAME_MIN_LENGTH = 3
     NAME_MAX_LENGTH = 50
@@ -14,9 +13,6 @@ module Comprehension
     validates :name, presence: true, length: {in: NAME_MIN_LENGTH..NAME_MAX_LENGTH}
 
     validate :name_unique_for_prompt, on: :create
-
-    after_create :log_creation
-    after_destroy :log_deletion
 
     def serializable_hash(options = nil)
       options ||= {}
@@ -43,14 +39,6 @@ module Comprehension
 
     private def url
       "comprehension/#/activities/#{activity_id}/semantic-labels/#{prompt_id}/#{rule&.id}"
-    end
-
-    private def log_creation
-      log_change(nil, :create_semantic, self, {url: url}.to_json, nil, nil, nil)
-    end
-
-    private def log_deletion
-      log_change(nil, :delete_semantic, self, {url: url}.to_json, nil, nil, nil)
     end
   end
 end
