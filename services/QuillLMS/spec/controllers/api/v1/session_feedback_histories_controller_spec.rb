@@ -123,7 +123,6 @@ describe Api::V1::SessionFeedbackHistoriesController, type: :controller do
           get :index, turk_session_id: @comprehension_turking_round.turking_round_id
 
           parsed_response = JSON.parse(response.body)
-
           expect(response).to have_http_status(200)
           expect(parsed_response['activity_sessions'].length).to eq(1)
           expect(parsed_response['activity_sessions'][0]['session_uid']).to eq(@feedback_history1.feedback_session_uid)
