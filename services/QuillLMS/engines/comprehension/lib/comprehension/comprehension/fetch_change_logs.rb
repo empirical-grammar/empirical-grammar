@@ -17,7 +17,7 @@ module Comprehension
     end
 
     def universal_change_logs
-      @change_log.where(action: UNIVERSAL_RULE_ACTIONS).map { |cl| cl.attributes.merge({name: Comprehension::Rule.find(cl.changed_record_id).name})} || []
+      @change_log.where(action: UNIVERSAL_RULE_ACTIONS).map { |cl| cl.attributes.merge({name: Comprehension::Rule.find_by_id(cl.changed_record_id)&.name})} || []
     end
 
     def activity_change_logs

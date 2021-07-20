@@ -65,7 +65,7 @@ module Comprehension
 
     private def log_update
       if text_changed?
-        log_change(1, :update_prompt, self, {url: activity.url, conjunction: conjunction}.to_json, "text", text_was, text)
+        log_change(nil, :update_prompt, self, {url: activity.url, conjunction: conjunction}.to_json, "text", text_was, text)
       end
     end
   end

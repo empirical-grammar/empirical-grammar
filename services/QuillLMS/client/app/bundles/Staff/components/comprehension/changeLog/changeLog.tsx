@@ -186,7 +186,7 @@ const ChangeLog = ({ history, match }) => {
       <div style={{width: '150px', padding: '10px'}}>
         <p className="control">
           <span className="select">
-            <select defaultValue='all' onChange={handleRuleChange}>
+            <select defaultValue='all' onChange={handleRuleChange} style={{maxWidth: '300px'}}>
               <option value="all">All Rules</option>
               {ruleOptions}
             </select>
