@@ -11,9 +11,9 @@ module Comprehension
     ]
 
     attr_readonly :automl_model_id, :name, :labels
+    attr_accessor :lms_user_id
 
     belongs_to :prompt, inverse_of: :automl_models
-    has_many :change_logs
 
     validate :validate_label_associations, if: :active?
 
@@ -21,8 +21,6 @@ module Comprehension
     validates :labels, presence: true, length: {minimum: MIN_LABELS_LENGTH}
     validates :name, presence: true
     validates :state, inclusion: {in: ['active', 'inactive']}
-
-    after_create :log_creation
 
     def serializable_hash(options = nil)
       options ||= {}
@@ -41,16 +39,6 @@ module Comprehension
 
     def active?
       state == STATE_ACTIVE
-    end
-
-    def save_with_session_user(lms_user_id)
-      @lms_user_id = lms_user_id
-      save
-    end
-
-    def activate_with_session_user(lms_user_id)
-      @lms_user_id = lms_user_id
-      activate
     end
 
     def activate
@@ -134,11 +122,18 @@ module Comprehension
     end
 
     private def log_creation
-      log_change(@lms_user_id, :create_automl, self, {url: url}.to_json, nil, nil, nil)
+      return if @lms_user_id.nil?
+      ChangeLog.log_change(@lms_user_id, :create_automl, self, {url: url}.to_json, nil, nil, nil)
     end
 
     private def log_activation
-      log_change(@lms_user_id, :activate_automl, self, {url: url}.to_json, nil, nil, nil)
+      ChangeLog.log_change(@lms_user_id, :activate_automl, self, {url: url}.to_json, nil, nil, nil)
+    end
+
+    def log_deletion
+    end
+
+    def log_update
     end
   end
 end

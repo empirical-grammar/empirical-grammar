@@ -11,13 +11,10 @@ module Comprehension
     ]
 
     belongs_to :feedback, inverse_of: :highlights
-    has_many :change_logs
 
     validates :text, presence: true, length: {minimum: MIN_TEXT_LENGTH, maximum: MAX_TEXT_LENGTH}
     validates :highlight_type, presence: true, inclusion: {in: TYPES}
     validates :starting_index, numericality: {only_integer: true, greater_than_or_equal_to: 0}
-
-    after_save :log_update
 
     def serializable_hash(options = nil)
       options ||= {}
@@ -39,6 +36,12 @@ module Comprehension
       feedback.order == 1
     end
 
+    private def log_creation
+    end
+
+    private def log_deletion
+    end
+
     private def log_update
       if text_changed?
         if semantic_rule && first_order
@@ -54,7 +57,7 @@ module Comprehension
     end
 
     private def send_change_log(action)
-      log_change(nil, action, self, {url: feedback.rule.url}.to_json, "text", text_was, text)
+      ChangeLog.log_change(nil, action, self, {url: feedback.rule.url}.to_json, "text", text_was, text)
     end
   end
 end

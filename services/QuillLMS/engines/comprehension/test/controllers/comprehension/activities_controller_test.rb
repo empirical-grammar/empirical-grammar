@@ -242,7 +242,7 @@ module Comprehension
 
         change_log = Comprehension.change_log_class.last
         assert_equal change_log.action, "Comprehension Stem - updated"
-        assert_equal change_log.user_id, 1
+        assert_equal change_log.user_id, nil
         assert_equal change_log.changed_record_type, "Comprehension::Prompt"
         assert_equal change_log.changed_record_id, @prompt.id
         assert_equal change_log.previous_value, old_text
@@ -255,7 +255,7 @@ module Comprehension
         prompt = Comprehension::Prompt.last
         change_log = Comprehension.change_log_class.last
         assert_equal change_log.action, "Comprehension Stem - updated"
-        assert_equal change_log.user_id, 1
+        assert_equal change_log.user_id, nil
         assert_equal change_log.changed_record_type, "Comprehension::Prompt"
         assert_equal change_log.changed_record_id, prompt.id
         assert_equal change_log.previous_value, nil
@@ -366,7 +366,9 @@ module Comprehension
       end
 
       should "return empty array if no change logs exist" do
-        get :change_logs, id: "none"
+        activity = create(:comprehension_activity)
+        Comprehension.change_log_class.destroy_all
+        get :change_logs, id: activity.id
         parsed_response = JSON.parse(response.body)
 
         assert_equal 200, response.code.to_i

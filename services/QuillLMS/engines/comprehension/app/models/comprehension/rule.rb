@@ -37,9 +37,6 @@ module Comprehension
     }
 
     after_create :assign_to_all_prompts, if: :universal
-    after_create :log_creation
-    after_update :log_update
-    after_destroy :log_deletion
     before_validation :assign_uid_if_missing
     validate :one_plagiarism_per_prompt, on: :create, if: :plagiarism?
 
@@ -162,24 +159,24 @@ module Comprehension
 
     private def log_creation
       if regex?
-        log_change(nil, :create_regex, self, {url: url}.to_json, nil, nil, nil)
+        ChangeLog.log_change(nil, :create_regex, self, {url: url}.to_json, nil, nil, nil)
       elsif plagiarism?
-        log_change(nil, :create_plagiarism, self, {url: url}.to_json, nil, nil, nil)
+        ChangeLog.log_change(nil, :create_plagiarism, self, {url: url}.to_json, nil, nil, nil)
       elsif universal?
-        log_change(nil, :create_universal, self, {url: url}.to_json, nil, nil, nil)
+        ChangeLog.log_change(nil, :create_universal, self, {url: url}.to_json, nil, nil, nil)
       elsif automl?
-        log_change(nil, :create_semantic, self, {url: url}.to_json, nil, nil, nil)
+        ChangeLog.log_change(nil, :create_semantic, self, {url: url}.to_json, nil, nil, nil)
       end
     end
 
     private def log_deletion
       if regex?
         prompts.each do |prompt|
-          log_change(nil, :delete_regex, prompt, {url: url, name: name}.to_json, nil, nil, nil)
+          ChangeLog.log_change(nil, :delete_regex, prompt, {url: url, name: name}.to_json, nil, nil, nil)
         end
       elsif automl?
         prompts.each do |prompt|
-          log_change(nil, :delete_semantic, prompt, {url: url, name: name}.to_json, nil, nil, nil)
+          ChangeLog.log_change(nil, :delete_semantic, prompt, {url: url, name: name}.to_json, nil, nil, nil)
         end
       end
     end
@@ -187,7 +184,7 @@ module Comprehension
     private def log_update
       return if id_changed? || rule_type == TYPE_OPINION
       changes.except("updated_at".to_sym).each do |key, value|
-        log_change(nil, UPDATE_ACTIONS[rule_type.to_sym], self, {url: url}.to_json, key, value[0], value[1])
+        ChangeLog.log_change(nil, UPDATE_ACTIONS[rule_type.to_sym], self, {url: url}.to_json, key, value[0], value[1])
       end
     end
 

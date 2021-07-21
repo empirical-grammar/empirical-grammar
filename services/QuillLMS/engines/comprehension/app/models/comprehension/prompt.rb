@@ -13,10 +13,8 @@ module Comprehension
     has_many :automl_models, inverse_of: :prompt
     has_many :prompts_rules
     has_many :rules, through: :prompts_rules, inverse_of: :prompts
-    has_many :change_logs
 
     after_create :assign_universal_rules
-    after_save :log_update
     before_validation :downcase_conjunction
     before_validation :set_max_attempts, on: :create
 
@@ -63,9 +61,16 @@ module Comprehension
       end
     end
 
+    private def log_creation
+
+    end
+
+    private def log_deletion
+    end
+
     private def log_update
       if text_changed?
-        log_change(nil, :update_prompt, self, {url: activity.url, conjunction: conjunction}.to_json, "text", text_was, text)
+        ChangeLog.log_change(nil, :update_prompt, self, {url: activity.url, conjunction: conjunction}.to_json, "text", text_was, text)
       end
     end
   end

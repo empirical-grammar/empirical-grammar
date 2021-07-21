@@ -2,7 +2,6 @@ module Comprehension
 
   class Activity < ActiveRecord::Base
     include Comprehension::ChangeLog
-    include Comprehension::FetchChangeLogs
 
     MIN_TARGET_LEVEL = 1
     MAX_TARGET_LEVEL = 12
@@ -14,13 +13,10 @@ module Comprehension
 
     before_destroy :expire_turking_rounds
     before_validation :set_parent_activity, on: :create
-    after_save :log_creation
-    after_destroy :log_deletion
 
     has_many :passages, inverse_of: :activity, dependent: :destroy
     has_many :prompts, inverse_of: :activity, dependent: :destroy
     has_many :turking_rounds, inverse_of: :activity
-    has_many :change_logs
     belongs_to :parent_activity, class_name: Comprehension.parent_activity_class
 
     accepts_nested_attributes_for :passages, reject_if: proc { |p| p['text'].blank? }
@@ -81,12 +77,16 @@ module Comprehension
 
     private def log_creation
       return unless @lms_user_id.present?
-      log_change(@lms_user_id, :create_activity, self, {url: url}.to_json, nil, nil, nil)
+      ChangeLog.log_change(@lms_user_id, :create_activity, self, {url: url}.to_json, nil, nil, nil)
+    end
+
+    private def log_update
+
     end
 
     private def log_deletion
       return unless @lms_user_id.present?
-      log_change(@lms_user_id, :delete_activity, self, {url: url}.to_json, nil, nil, nil)
+      ChangeLog.log_change(@lms_user_id, :delete_activity, self, {url: url}.to_json, nil, nil, nil)
     end
   end
 end
