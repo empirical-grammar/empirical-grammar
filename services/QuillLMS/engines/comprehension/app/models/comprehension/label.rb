@@ -27,17 +27,5 @@ module Comprehension
         errors.add(:name, "can't be the same as any other labels related to the same prompt")
       end
     end
-
-    private def activity_id
-      rule&.prompts&.first&.activity&.id
-    end
-
-    private def prompt_id
-      rule&.prompts&.first&.id
-    end
-
-    private def url
-      "comprehension/#/activities/#{activity_id}/semantic-labels/#{prompt_id}/#{rule&.id}"
-    end
   end
 end

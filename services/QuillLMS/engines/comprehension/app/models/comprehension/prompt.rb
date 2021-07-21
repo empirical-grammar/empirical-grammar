@@ -32,6 +32,14 @@ module Comprehension
       ))
     end
 
+    def change_log_name
+      "Comprehension Stem"
+    end
+
+    def url
+      activity.url
+    end
+
     private def downcase_conjunction
       self.conjunction = conjunction&.downcase
     end
@@ -65,13 +73,9 @@ module Comprehension
 
     end
 
-    private def log_deletion
-    end
-
     private def log_update
-      if text_changed?
-        ChangeLog.log_change(nil, :update_prompt, self, {url: activity.url, conjunction: conjunction}.to_json, "text", text_was, text)
-      end
+      return unless text_changed?
+      log_change(nil, :update, self, {url: activity.url, conjunction: conjunction}.to_json, "text", text_was, text)
     end
   end
 end

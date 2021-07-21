@@ -11,7 +11,6 @@ module Comprehension
     ]
 
     attr_readonly :automl_model_id, :name, :labels
-    attr_accessor :lms_user_id
 
     belongs_to :prompt, inverse_of: :automl_models
 
@@ -72,6 +71,14 @@ module Comprehension
       @older_models ||= AutomlModel.where(prompt_id: prompt_id).where("created_at < ?", created_at).count
     end
 
+    def change_log_name
+      "AutoML Model"
+    end
+
+    def url
+      "comprehension/#/activities/#{prompt.activity.id}/semantic-labels/model/#{id}"
+    end
+
     private def prompt_automl_rules
       prompt.rules.where(rule_type: Rule::TYPE_AUTOML)
     end
@@ -117,23 +124,8 @@ module Comprehension
       model.display_name
     end
 
-    private def url
-      "comprehension/#/activities/#{prompt.activity.id}/semantic-labels/model/#{id}"
-    end
-
-    private def log_creation
-      return if @lms_user_id.nil?
-      ChangeLog.log_change(@lms_user_id, :create_automl, self, {url: url}.to_json, nil, nil, nil)
-    end
-
     private def log_activation
-      ChangeLog.log_change(@lms_user_id, :activate_automl, self, {url: url}.to_json, nil, nil, nil)
-    end
-
-    def log_deletion
-    end
-
-    def log_update
+      log_change(@lms_user_id, :activate_automl, self, {url: url}.to_json, nil, nil, nil)
     end
   end
 end

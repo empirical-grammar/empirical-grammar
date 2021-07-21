@@ -9,8 +9,6 @@ module Comprehension
     MAX_TITLE_LENGTH = 100
     MAX_SCORED_LEVEL_LENGTH = 100
 
-    attr_accessor :lms_user_id
-
     before_destroy :expire_turking_rounds
     before_validation :set_parent_activity, on: :create
 
@@ -33,16 +31,6 @@ module Comprehension
     validates :notes, presence: true
     validates :scored_level, length: { maximum: MAX_SCORED_LEVEL_LENGTH, allow_nil: true}
 
-    def save_with_session_user(user_id)
-      @lms_user_id = user_id
-      save
-    end
-
-    def destroy_with_session_user(user_id)
-      @lms_user_id = user_id
-      destroy
-    end
-
     def set_parent_activity
       if parent_activity_id
         self.parent_activity = Comprehension.parent_activity_class.find_by_id(parent_activity_id)
@@ -63,8 +51,12 @@ module Comprehension
       ))
     end
 
-    def change_logs
+    def fetch_change_logs
       change_logs_for_activity(self)
+    end
+
+    def change_log_name
+      "Comprehension Activity"
     end
 
     def url
@@ -73,20 +65,6 @@ module Comprehension
 
     private def expire_turking_rounds
       turking_rounds.each(&:expire!)
-    end
-
-    private def log_creation
-      return unless @lms_user_id.present?
-      ChangeLog.log_change(@lms_user_id, :create_activity, self, {url: url}.to_json, nil, nil, nil)
-    end
-
-    private def log_update
-
-    end
-
-    private def log_deletion
-      return unless @lms_user_id.present?
-      ChangeLog.log_change(@lms_user_id, :delete_activity, self, {url: url}.to_json, nil, nil, nil)
     end
   end
 end

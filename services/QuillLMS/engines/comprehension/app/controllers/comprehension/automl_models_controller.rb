@@ -55,7 +55,7 @@ module Comprehension
     end
 
     private def set_lms_user_id
-      @automl_model.lms_user_id = lms_user_id if @automl_model.present?
+      @automl_model.lms_user_id = lms_user_id
     end
 
     private def set_automl_model

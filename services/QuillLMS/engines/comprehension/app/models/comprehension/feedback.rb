@@ -23,6 +23,24 @@ module Comprehension
       ))
     end
 
+    def change_log_name
+      if semantic_rule && first_order
+        "Semantic Label First Layer Feedback"
+      elsif semantic_rule && second_order
+        "Semantic Label Second Layer Feedback"
+      elsif rule.plagiarism?
+        "Plagiarism Rule Feedback"
+      elsif rule.regex?
+        "Regex Rule Feedback"
+      else
+        "Feedback"
+      end
+    end
+
+    def url
+      rule.url
+    end
+
     private def semantic_rule
       rule.rule_type == Rule::TYPE_AUTOML
     end
@@ -35,28 +53,9 @@ module Comprehension
       order == 1
     end
 
-    private def log_creation
-    end
-
-    private def log_deletion
-    end
-
     private def log_update
-      if text_changed?
-        if semantic_rule && first_order
-          send_change_log(:update_feedback_1)
-        elsif semantic_rule && second_order
-          send_change_log(:update_feedback_2)
-        elsif rule.plagiarism?
-          send_change_log(:update_plagiarism_feedback)
-        elsif rule.regex?
-          send_change_log(:update_regex_feedback)
-        end
-      end
-    end
-
-    private def send_change_log(action)
-      ChangeLog.log_change(nil, action, self, {url: rule.url}.to_json, "text", text_was, text)
+      return unless text_changed?
+      log_change(nil, :update, self, {url: rule.url}.to_json, "text", text_was, text)
     end
   end
 end

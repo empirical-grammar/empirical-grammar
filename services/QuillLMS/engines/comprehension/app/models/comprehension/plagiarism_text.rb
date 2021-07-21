@@ -14,17 +14,21 @@ module Comprehension
       ))
     end
 
-    private def log_creation
-      ChangeLog.log_change(nil, :update_plagiarism_text, self, {url: rule.url}.to_json, "text", nil, text)
+    def change_log_name
+      "Plagiarism Rule Text"
     end
 
-    private def log_deletion
+    def url
+      rule.url
+    end
+
+    private def log_creation
+      log_change(nil, :update, self, {url: rule.url}.to_json, "text", nil, text)
     end
 
     def log_update
-      if text_changed?
-        ChangeLog.log_change(nil, :update_plagiarism_text, self, {url: rule.url}.to_json, "text", text_was, text)
-      end
+      return unless text_changed?
+      log_change(nil, :update, self, {url: rule.url}.to_json, "text", text_was, text)
     end
   end
 end

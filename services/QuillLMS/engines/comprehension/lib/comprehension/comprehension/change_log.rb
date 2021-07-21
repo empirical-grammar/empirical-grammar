@@ -4,19 +4,25 @@ module Comprehension
     UNIVERSAL_RULE_ACTIONS = ['Universal Rule - updated', 'Universal Rule - created']
 
     included do
+      attr_accessor :lms_user_id
       has_many :change_logs, as: :changed_record
       after_create :log_creation
       after_update :log_update
-      after_destroy :log_deletion
     end
 
-    def self.log_change(user_id, action, changed_record, explanation = nil, changed_attribute = nil, previous_value = nil, new_value = nil)
+    def log_creation
+      log_change(@lms_user_id, :create, self, nil, nil, nil, nil)
+    end
+
+    def log_update
+    end
+
+    def log_change(user_id, action, changed_record, explanation = nil, changed_attribute = nil, previous_value = nil, new_value = nil)
       change_log = {
         user_id: user_id,
         action: Comprehension.change_log_class::COMPREHENSION_ACTIONS[action],
         changed_record_type: changed_record.class.name,
         changed_record_id: changed_record.id,
-        explanation: explanation,
         changed_attribute: changed_attribute,
         previous_value: previous_value,
         new_value: new_value
@@ -51,9 +57,7 @@ module Comprehension
 
     def prompts_change_logs
       @activity.prompts.map { |prompt|
-        prompt_logs = @change_log.where(changed_record_type: 'Comprehension::Prompt', changed_record_id: prompt.id).map{ |cl|
-          ['Regex Rule - deleted', 'Semantic Label - deleted'].include?(cl.action) ? cl.attributes.merge({name: JSON.parse(cl.explanation)["name"]}) : cl.attributes
-        }
+        prompt_logs = @change_log.where(changed_record_type: 'Comprehension::Prompt', changed_record_id: prompt.id).map(&:attributes)
         logs = prompt_logs + automl_change_logs(prompt) + rules_change_logs(prompt)
         logs.map { |log|
           log.merge({conjunction: prompt.conjunction})

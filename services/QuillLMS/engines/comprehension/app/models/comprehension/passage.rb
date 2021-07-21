@@ -16,17 +16,21 @@ module Comprehension
       ))
     end
 
-    private def log_creation
-      ChangeLog.log_change(nil, :update_passage, self, {url: activity.url}.to_json, "text", nil, text)
+    def change_log_name
+      "Comprehension Passage Text"
     end
 
-    private def log_deletion
+    def url
+      activity.url
+    end
+
+    private def log_creation
+      log_change(nil, :update, self, {url: activity.url}.to_json, "text", nil, text)
     end
 
     private def log_update
-      if text_changed?
-        ChangeLog.log_change(nil, :update_passage, self, {url: activity.url}.to_json, "text", text_was, text)
-      end
+      return unless text_changed?
+      log_change(nil, :update, self, {url: activity.url}.to_json, "text", text_was, text)
     end
   end
 end

@@ -38,6 +38,14 @@ module Comprehension
       sequence_type == TYPE_INCORRECT
     end
 
+    def change_log_name
+      "Regex Rule Regex"
+    end
+
+    def url
+      rule.url
+    end
+
     private def regex_match(entry)
       case_sensitive? ? Regexp.new(regex_text).match(entry) : Regexp.new(regex_text, Regexp::IGNORECASE).match(entry)
     end
@@ -57,15 +65,12 @@ module Comprehension
     end
 
     private def log_creation
-      ChangeLog.log_change(nil, :update_regex_text, self, {url: rule.url}.to_json, "regex_text", nil, regex_text)
-    end
-
-    private def log_deletion
+      log_change(nil, :update, self, {url: rule.url}.to_json, "regex_text", nil, regex_text)
     end
 
     def log_update
       if regex_text_changed?
-        ChangeLog.log_change(nil, :update_regex_text, self, {url: rule.url}.to_json, "regex_text", regex_text_was, regex_text)
+        log_change(nil, :update, self, {url: rule.url}.to_json, "regex_text", regex_text_was, regex_text)
       end
     end
   end
