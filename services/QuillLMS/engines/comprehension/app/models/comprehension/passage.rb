@@ -23,14 +23,5 @@ module Comprehension
     def url
       activity.url
     end
-
-    private def log_creation
-      log_change(nil, :update, self, {url: activity.url}.to_json, "text", nil, text)
-    end
-
-    private def log_update
-      return unless text_changed?
-      log_change(nil, :update, self, {url: activity.url}.to_json, "text", text_was, text)
-    end
   end
 end

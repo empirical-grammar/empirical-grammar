@@ -21,14 +21,5 @@ module Comprehension
     def url
       rule.url
     end
-
-    private def log_creation
-      log_change(nil, :update, self, {url: rule.url}.to_json, "text", nil, text)
-    end
-
-    def log_update
-      return unless text_changed?
-      log_change(nil, :update, self, {url: rule.url}.to_json, "text", text_was, text)
-    end
   end
 end

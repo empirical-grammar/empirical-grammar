@@ -65,12 +65,12 @@ module Comprehension
     end
 
     private def log_creation
-      log_change(nil, :update, self, {url: rule.url}.to_json, "regex_text", nil, regex_text)
+      log_change(nil, :update, self, "regex_text", nil, regex_text)
     end
 
-    def log_update
+    private def log_update
       if regex_text_changed?
-        log_change(nil, :update, self, {url: rule.url}.to_json, "regex_text", regex_text_was, regex_text)
+        log_change(nil, :update, self, "regex_text", regex_text_was, regex_text)
       end
     end
   end

@@ -162,13 +162,6 @@ module Comprehension
       end
     end
 
-    private def log_update
-      return if id_changed? || rule_type == TYPE_OPINION
-      changes.except("updated_at".to_sym).each do |key, value|
-        log_change(nil, :update, self, {url: url}.to_json, key, value[0], value[1])
-      end
-    end
-
     private def activity_id
       prompts&.first&.activity&.id
     end

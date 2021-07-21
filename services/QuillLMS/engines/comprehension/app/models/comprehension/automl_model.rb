@@ -125,7 +125,7 @@ module Comprehension
     end
 
     private def log_activation
-      log_change(@lms_user_id, :activate_automl, self, {url: url}.to_json, nil, nil, nil)
+      log_change(@lms_user_id, :activate_automl, self, nil, nil, nil)
     end
   end
 end

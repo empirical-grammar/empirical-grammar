@@ -496,7 +496,7 @@ module Comprehension
         universal_rule.reload
         change_log = Comprehension.change_log_class.last
         assert_equal change_log.serializable_hash["comprehension_action"], "Universal Rule - updated"
-        assert_equal change_log.user_id, nil
+        assert_equal change_log.user_id, 1
         assert_equal change_log.changed_record_id, universal_rule.id
         assert_equal change_log.changed_record_type, "Comprehension::Rule"
         assert_equal change_log.changed_attribute, "name"
@@ -517,7 +517,7 @@ module Comprehension
         plagiarism_rule.reload
         change_log = Comprehension.change_log_class.find_by(changed_attribute: 'state')
         assert_equal change_log.serializable_hash["comprehension_action"], "Plagiarism Rule - updated"
-        assert_equal change_log.user_id, nil
+        assert_equal change_log.user_id, 1
         assert_equal change_log.changed_record_id, plagiarism_rule.id
         assert_equal change_log.changed_record_type, "Comprehension::Rule"
         assert_equal change_log.changed_attribute, "state"
@@ -534,7 +534,7 @@ module Comprehension
         regex_rule.reload
         change_log = Comprehension.change_log_class.last
         assert_equal change_log.serializable_hash["comprehension_action"], "Regex Rule - updated"
-        assert_equal change_log.user_id, nil
+        assert_equal change_log.user_id, 1
         assert_equal change_log.changed_record_id, regex_rule.id
         assert_equal change_log.changed_record_type, "Comprehension::Rule"
         assert_equal change_log.changed_attribute, "name"
@@ -566,7 +566,7 @@ module Comprehension
         @rule.reload
         plagiarism_text_obj = Comprehension::PlagiarismText.last
         change_log = Comprehension.change_log_class.last
-        assert_equal change_log.serializable_hash["comprehension_action"], "Plagiarism Rule Text - updated"
+        assert_equal change_log.serializable_hash["comprehension_action"], "Plagiarism Rule Text - created"
         assert_equal change_log.user_id, nil
         assert_equal change_log.changed_record_id, plagiarism_text_obj.id
         assert_equal change_log.changed_record_type, "Comprehension::PlagiarismText"
@@ -829,7 +829,7 @@ module Comprehension
         automl_rule.reload
         change_log = Comprehension.change_log_class.last
         assert_equal change_log.serializable_hash["comprehension_action"], "Semantic Label - updated"
-        assert_equal change_log.user_id, nil
+        assert_equal change_log.user_id, 1
         assert_equal change_log.changed_record_id, automl_rule.id
         assert_equal change_log.changed_record_type, "Comprehension::Rule"
         assert_equal change_log.new_value, new_name

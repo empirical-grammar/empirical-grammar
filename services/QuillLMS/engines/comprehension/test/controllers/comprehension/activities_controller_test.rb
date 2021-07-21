@@ -218,7 +218,7 @@ module Comprehension
         put :update, id: @activity.id, activity: { passages_attributes: [{text: ('Goodbye' * 20)}] }
 
         change_log = Comprehension.change_log_class.last
-        assert_equal change_log.serializable_hash["comprehension_action"], "Comprehension Passage Text - updated"
+        assert_equal change_log.serializable_hash["comprehension_action"], "Comprehension Passage Text - created"
         assert_equal change_log.user_id, nil
         assert_equal change_log.changed_record_type, "Comprehension::Passage"
         assert_equal change_log.previous_value, nil
@@ -254,7 +254,7 @@ module Comprehension
 
         prompt = Comprehension::Prompt.last
         change_log = Comprehension.change_log_class.last
-        assert_equal change_log.serializable_hash["comprehension_action"], "Comprehension Stem - updated"
+        assert_equal change_log.serializable_hash["comprehension_action"], "Comprehension Stem - created"
         assert_equal change_log.user_id, nil
         assert_equal change_log.changed_record_type, "Comprehension::Prompt"
         assert_equal change_log.changed_record_id, prompt.id

@@ -52,10 +52,5 @@ module Comprehension
     private def second_order
       order == 1
     end
-
-    private def log_update
-      return unless text_changed?
-      log_change(nil, :update, self, {url: rule.url}.to_json, "text", text_was, text)
-    end
   end
 end

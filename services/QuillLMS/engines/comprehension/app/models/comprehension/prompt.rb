@@ -68,14 +68,5 @@ module Comprehension
         end
       end
     end
-
-    private def log_creation
-
-    end
-
-    private def log_update
-      return unless text_changed?
-      log_change(nil, :update, self, {url: activity.url, conjunction: conjunction}.to_json, "text", text_was, text)
-    end
   end
 end
